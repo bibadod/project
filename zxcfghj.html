@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>World Border Editor</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #17191d;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ==============================
+           TOP PANEL
+        ============================== */
+
+        .top-panel {
+            position: absolute;
+            z-index: 1000;
+
+            top: 14px;
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            width: min(
+                1250px,
+                calc(100% - 30px)
+            );
+
+            padding: 18px;
+
+            background: rgba(24, 26, 32, 0.96);
+
+            border: 1px solid #3e434d;
+
+            border-radius: 16px;
+
+            color: white;
+
+            box-shadow:
+                0 15px 45px rgba(0, 0, 0, 0.45);
+
+            backdrop-filter: blur(12px);
+        }
+
+        .title {
+            font-size: 23px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            height: 50px;
+            min-width: 225px;
+
+            padding: 0 15px;
+
+            background: #292e37;
+
+            color: white;
+
+            border: 1px solid #505661;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+
+            outline: none;
+        }
+
+        select:focus {
+            border-color: #5595ef;
+        }
+
+        .arrow {
+            font-size: 25px;
+            color: #d6d9df;
+        }
+
+        button {
+            height: 50px;
+
+            padding: 0 20px;
+
+            border: 0;
+
+            border-radius: 10px;
+
+            color: white;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.15s,
+                filter 0.15s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: none;
+            transform: none;
+        }
+
+        #drawButton {
+            background: #277ce0;
+        }
+
+        #undoButton,
+        #redoButton {
+            background: #4a5260;
+        }
+
+        #resetButton {
+            background: #8a3434;
+        }
+
+        .status {
+            margin-top: 12px;
+            color: #aeb4bf;
+            font-size: 14px;
+        }
+
+        /* ==============================
+           INFO PANEL
+        ============================== */
+
+        .info-panel {
+            position: absolute;
+
+            z-index: 1000;
+
+            left: 18px;
+            bottom: 18px;
+
+            width: 330px;
+
+            padding: 16px;
+
+            background: rgba(24, 27, 33, 0.96);
+
+            border: 1px solid #404650;
+
+            border-radius: 15px;
+
+            color: white;
+
+            box-shadow:
+                0 12px 35px rgba(0, 0, 0, 0.4);
+
+            backdrop-filter: blur(10px);
+        }
+
+        .country {
+            padding: 13px;
+
+            border-radius: 11px;
+
+            margin-bottom: 9px;
+        }
+
+        .country-a {
+            background:
+                rgba(45, 120, 225, 0.20);
+
+            border-left:
+                5px solid #3185e8;
+        }
+
+        .country-b {
+            background:
+                rgba(220, 65, 65, 0.20);
+
+            border-left:
+                5px solid #df4141;
+        }
+
+        .label {
+            color: #aab0ba;
+            font-size: 13px;
+        }
+
+        .country-name {
+            font-size: 23px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .area {
+            color: #aab0ba;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .hint {
+            color: #969da8;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 13px;
+        }
+
+        .drawing {
+            cursor: crosshair !important;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+
+<!-- ==============================
+     TOP PANEL
+============================== -->
+
+<div class="top-panel">
+
+    <div class="title">
+        🌍 World Border Editor
+    </div>
+
+
+    <div class="controls">
+
+        <select id="countryA">
+
+            <option value="Ukraine">
+                Ukraine
+            </option>
+
+            <option value="Russia">
+                Russia
+            </option>
+
+            <option value="Poland">
+                Poland
+            </option>
+
+            <option value="Belarus">
+                Belarus
+            </option>
+
+            <option value="Germany">
+                Germany
+            </option>
+
+            <option value="France">
+                France
+            </option>
+
+            <option value="United Kingdom">
+                United Kingdom
+            </option>
+
+            <option value="Spain">
+                Spain
+            </option>
+
+            <option value="Italy">
+                Italy
+            </option>
+
+            <option value="Romania">
+                Romania
+            </option>
+
+            <option value="Moldova">
+                Moldova
+            </option>
+
+            <option value="Turkey">
+                Turkey
+            </option>
+
+            <option value="China">
+                China
+            </option>
+
+            <option value="India">
+                India
+            </option>
+
+            <option value="United States of America">
+                United States
+            </option>
+
+            <option value="Canada">
+                Canada
+            </option>
+
+            <option value="Australia">
+                Australia
+            </option>
+
+            <option value="Japan">
+                Japan
+            </option>
+
+        </select>
+
+
+        <div class="arrow">
+            →
+        </div>
+
+
+        <select id="countryB">
+
+            <option value="Russia">
+                Russia
+            </option>
+
+            <option value="Ukraine">
+                Ukraine
+            </option>
+
+            <option value="Poland">
+                Poland
+            </option>
+
+            <option value="Belarus">
+                Belarus
+            </option>
+
+            <option value="Germany">
+                Germany
+            </option>
+
+            <option value="France">
+                France
+            </option>
+
+            <option value="United Kingdom">
+                United Kingdom
+            </option>
+
+            <option value="Spain">
+                Spain
+            </option>
+
+            <option value="Italy">
+                Italy
+            </option>
+
+            <option value="Romania">
+                Romania
+            </option>
+
+            <option value="Moldova">
+                Moldova
+            </option>
+
+            <option value="Turkey">
+                Turkey
+            </option>
+
+            <option value="China">
+                China
+            </option>
+
+            <option value="India">
+                India
+            </option>
+
+            <option value="United States of America">
+                United States
+            </option>
+
+            <option value="Canada">
+                Canada
+            </option>
+
+            <option value="Australia">
+                Australia
+            </option>
+
+            <option value="Japan">
+                Japan
+            </option>
+
+        </select>
+
+
+        <button id="drawButton">
+            ✏️ Изменить границу
+        </button>
+
+
+        <button id="undoButton" disabled>
+            ↩ Шаг назад
+        </button>
+
+
+        <button id="redoButton" disabled>
+            ↪ Шаг вперёд
+        </button>
+
+
+        <button id="resetButton">
+            🔄 Сбросить всё
+        </button>
+
+    </div>
+
+
+    <div
+        class="status"
+        id="status"
+    >
+        Выбери страны и нажми «Изменить границу».
+    </div>
+
+</div>
+
+
+<!-- ==============================
+     INFO PANEL
+============================== -->
+
+<div class="info-panel">
+
+    <div class="country country-a">
+
+        <div class="label">
+            Территорию передаёт
+        </div>
+
+        <div
+            class="country-name"
+            id="nameA"
+        >
+            Ukraine
+        </div>
+
+        <div
+            class="area"
+            id="areaA"
+        >
+            Пока ничего не передано
+        </div>
+
+    </div>
+
+
+    <div class="country country-b">
+
+        <div class="label">
+            Территорию получает
+        </div>
+
+        <div
+            class="country-name"
+            id="nameB"
+        >
+            Russia
+        </div>
+
+        <div
+            class="area"
+            id="areaB"
+        >
+            Пока ничего не получено
+        </div>
+
+    </div>
+
+
+    <div class="hint">
+
+        Нажми «Изменить границу».
+        Затем зажми левую кнопку мыши и
+        обведи часть территории первой страны.
+
+    </div>
+
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+
+<script>
+
+/* =====================================================
+   MAP
+===================================================== */
+
+const map =
+    L.map(
+        "map",
+        {
+            worldCopyJump: true
+        }
+    );
+
+
+map.setView(
+    [30, 20],
+    3
+);
+
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        maxZoom: 18,
+
+        attribution:
+            "&copy; OpenStreetMap contributors"
+    }
+).addTo(map);
+
+
+/* =====================================================
+   VARIABLES
+===================================================== */
+
+let worldData = null;
+
+let countryLayers = {};
+
+let countryGeometries = {};
+
+let historyStack = [];
+let redoStack = [];
+
+let drawing = false;
+
+let drawingPoints = [];
+
+let drawingLine = null;
+
+
+const COLOR_A =
+    "#3185e8";
+
+
+const COLOR_B =
+    "#df4141";
+
+
+const NORMAL_COLOR =
+    "#777e89";
+
+
+const BORDER_COLOR =
+    "#555c67";
+
+
+/* =====================================================
+   LOAD WORLD DATA
+===================================================== */
+
+fetch(
+    "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
+)
+
+.then(
+    response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                "GeoJSON loading failed"
+            );
+
+        }
+
+        return response.json();
+
+    }
+)
+
+.then(
+    data => {
+
+        worldData = data;
+
+        createCountries();
+
+        updateCountries();
+
+    }
+)
+
+.catch(
+    error => {
+
+        console.error(error);
+
+        setStatus(
+            "Не удалось загрузить границы стран."
+        );
+
+    }
+);
+
+
+/* =====================================================
+   CREATE COUNTRIES
+===================================================== */
+
+function createCountries() {
+
+    worldData.features.forEach(
+        feature => {
+
+            const name =
+                feature.properties.ADMIN ||
+                feature.properties.NAME ||
+                feature.properties.name;
+
+
+            if (!name) {
+                return;
+            }
+
+
+            if (!countryLayers[name]) {
+
+                const layer =
+                    L.geoJSON(
+                        null,
+                        {
+
+                            style: {
+
+                                color:
+                                    BORDER_COLOR,
+
+                                weight: 1,
+
+                                fillColor:
+                                    NORMAL_COLOR,
+
+                                fillOpacity:
+                                    0.10
+
+                            }
+
+                        }
+                    );
+
+
+                layer.addTo(map);
+
+
+                countryLayers[name] =
+                    layer;
+
+
+                layer.bindTooltip(
+                    name,
+                    {
+                        sticky: true
+                    }
+                );
+
+            }
+
+
+            if (
+                !countryGeometries[name]
+            ) {
+
+                countryGeometries[name] =
+                    feature;
+
+            }
+
+            else {
+
+                try {
+
+                    countryGeometries[name] =
+                        turf.union(
+                            turf.featureCollection([
+                                countryGeometries[name],
+                                feature
+                            ])
+                        );
+
+                }
+
+                catch (error) {
+
+                    console.warn(
+                        "Не удалось объединить части страны:",
+                        name,
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+
+    redrawAllCountries();
+
+}
+
+function redrawAllCountries() {
+    Object.keys(
+        countryGeometries
+    ).forEach(
+        name => {
+
+            if (
+                countryLayers[name]
+            ) {
+
+                countryLayers[name].clearLayers();
+
+                countryLayers[name].addData(
+                    countryGeometries[name]
+                );
+
+            }
+
+        }
+    );
+}
+
+
+/* =====================================================
+   COUNTRY SELECTS
+===================================================== */
+
+const countryA =
+    document.getElementById(
+        "countryA"
+    );
+
+
+const countryB =
+    document.getElementById(
+        "countryB"
+    );
+
+
+countryA.addEventListener(
+    "change",
+    updateCountries
+);
+
+
+countryB.addEventListener(
+    "change",
+    updateCountries
+);
+
+
+/* =====================================================
+   UPDATE COLORS
+===================================================== */
+
+function updateCountries() {
+
+    if (!worldData) {
+        return;
+    }
+
+
+    Object.keys(
+        countryLayers
+    ).forEach(
+        name => {
+
+            countryLayers[name].setStyle({
+
+                color:
+                    BORDER_COLOR,
+
+                weight: 1,
+
+                fillColor:
+                    NORMAL_COLOR,
+
+                fillOpacity: 0.10
+
+            });
+
+        }
+    );
+
+
+    const layerA =
+        countryLayers[
+            countryA.value
+        ];
+
+
+    const layerB =
+        countryLayers[
+            countryB.value
+        ];
+
+
+    if (layerA) {
+
+        layerA.setStyle({
+
+            color:
+                COLOR_A,
+
+            weight: 2,
+
+            fillColor:
+                COLOR_A,
+
+            fillOpacity: 0.48
+
+        });
+
+    }
+
+
+    if (layerB) {
+
+        layerB.setStyle({
+
+            color:
+                COLOR_B,
+
+            weight: 2,
+
+            fillColor:
+                COLOR_B,
+
+            fillOpacity: 0.48
+
+        });
+
+    }
+
+
+    document.getElementById(
+        "nameA"
+    ).textContent =
+        countryA.value;
+
+
+    document.getElementById(
+        "nameB"
+    ).textContent =
+        countryB.value;
+
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(text) {
+
+    document.getElementById(
+        "status"
+    ).textContent =
+        text;
+
+}
+
+
+/* =====================================================
+   DRAW BUTTON
+===================================================== */
+
+document.getElementById(
+    "drawButton"
+).addEventListener(
+    "click",
+    startDrawing
+);
+
+
+function startDrawing() {
+
+    if (
+        countryA.value ===
+        countryB.value
+    ) {
+
+        alert(
+            "Выбери две разные страны."
+        );
+
+        return;
+
+    }
+
+
+    if (!worldData) {
+
+        alert(
+            "Карта ещё загружается."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !countryGeometries[
+            countryA.value
+        ]
+    ) {
+
+        alert(
+            "Не найдена территория исходной страны."
+        );
+
+        return;
+
+    }
+
+
+    drawing = true;
+
+    drawingPoints = [];
+
+
+    if (drawingLine) {
+
+        map.removeLayer(
+            drawingLine
+        );
+
+        drawingLine = null;
+
+    }
+
+
+    map.dragging.disable();
+
+    map.doubleClickZoom.disable();
+
+    map.scrollWheelZoom.disable();
+
+
+    map.getContainer()
+        .classList
+        .add("drawing");
+
+
+    setStatus(
+        "Зажми мышь и обведи территорию..."
+    );
+
+}
+
+
+/* =====================================================
+   MOUSE DOWN
+===================================================== */
+
+map.on(
+    "mousedown",
+    function(event) {
+
+        if (!drawing) {
+            return;
+        }
+
+
+        drawingPoints = [
+            event.latlng
+        ];
+
+
+        drawingLine =
+            L.polyline(
+                drawingPoints,
+                {
+
+                    color:
+                        "#ffffff",
+
+                    weight: 4,
+
+                    opacity: 1,
+
+                    lineCap:
+                        "round",
+
+                    lineJoin:
+                        "round"
+
+                }
+            ).addTo(map);
+
+    }
+);
+
+
+/* =====================================================
+   MOUSE MOVE
+===================================================== */
+
+map.on(
+    "mousemove",
+    function(event) {
+
+        if (
+            !drawing ||
+            !drawingLine
+        ) {
+            return;
+        }
+
+
+        const lastPoint =
+            drawingPoints[
+                drawingPoints.length - 1
+            ];
+
+
+        const distance =
+            map.distance(
+                lastPoint,
+                event.latlng
+            );
+
+
+        if (
+            distance < 120
+        ) {
+            return;
+        }
+
+
+        drawingPoints.push(
+            event.latlng
+        );
+
+
+        drawingLine.setLatLngs(
+            drawingPoints
+        );
+
+    }
+);
+
+
+/* =====================================================
+   MOUSE UP
+===================================================== */
+
+map.on(
+    "mouseup",
+    function() {
+
+        if (!drawing) {
+            return;
+        }
+
+
+        drawing = false;
+
+
+        map.dragging.enable();
+
+        map.doubleClickZoom.enable();
+
+        map.scrollWheelZoom.enable();
+
+
+        map.getContainer()
+            .classList
+            .remove("drawing");
+
+
+        if (drawingLine) {
+
+            map.removeLayer(
+                drawingLine
+            );
+
+            drawingLine = null;
+
+        }
+
+
+        if (
+            drawingPoints.length < 4
+        ) {
+
+            setStatus(
+                "Область слишком маленькая."
+            );
+
+            return;
+
+        }
+
+
+        finishDrawing();
+
+    }
+);
+
+
+/* =====================================================
+   CREATE POLYGON
+===================================================== */
+
+function finishDrawing() {
+
+    const points =
+        [
+            ...drawingPoints
+        ];
+
+
+    points.push(
+        points[0]
+    );
+
+
+    const coordinates =
+        points.map(
+            point => [
+                point.lng,
+                point.lat
+            ]
+        );
+
+
+    let polygon;
+
+
+    try {
+
+        polygon =
+            turf.polygon(
+                [coordinates]
+            );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        setStatus(
+            "Не удалось создать область."
+        );
+
+        return;
+
+    }
+
+
+    let fixedPolygon;
+
+
+    try {
+
+        const fixed =
+            turf.unkinkPolygon(
+                polygon
+            );
+
+
+        if (
+            fixed.features.length === 1
+        ) {
+
+            fixedPolygon =
+                fixed.features[0];
+
+        }
+
+        else {
+
+            let result =
+                fixed.features[0];
+
+
+            for (
+                let i = 1;
+                i < fixed.features.length;
+                i++
+            ) {
+
+                try {
+
+                    result =
+                        turf.union(
+                            turf.featureCollection([
+                                result,
+                                fixed.features[i]
+                            ])
+                        );
+
+                }
+
+                catch (error) {
+
+                    console.warn(
+                        error
+                    );
+
+                }
+
+            }
+
+
+            fixedPolygon =
+                result;
+
+        }
+
+    }
+
+    catch (error) {
+
+        fixedPolygon =
+            polygon;
+
+    }
+
+
+    transferTerritory(
+        fixedPolygon
+    );
+
+}
+
+
+/* =====================================================
+   TRANSFER TERRITORY
+===================================================== */
+
+function transferTerritory(
+    drawnPolygon
+) {
+
+    const sourceName =
+        countryA.value;
+
+
+    const targetName =
+        countryB.value;
+
+
+    const sourceFeature =
+        countryGeometries[
+            sourceName
+        ];
+
+
+    const targetFeature =
+        countryGeometries[
+            targetName
+        ];
+
+
+    if (!sourceFeature) {
+
+        setStatus(
+            "Не найдена территория исходной страны."
+        );
+
+        return;
+
+    }
+
+
+    if (!targetFeature) {
+
+        setStatus(
+            "Не найдена территория страны-получателя."
+        );
+
+        return;
+
+    }
+
+
+    let transferred;
+
+
+    try {
+
+        transferred =
+            turf.intersect(
+                turf.featureCollection([
+                    sourceFeature,
+                    drawnPolygon
+                ])
+            );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        setStatus(
+            "Ошибка при пересечении территорий."
+        );
+
+        return;
+
+    }
+
+
+    if (!transferred) {
+
+        setStatus(
+            "Нарисованная область не пересекает территорию страны."
+        );
+
+        return;
+
+    }
+
+
+    const area =
+        turf.area(
+            transferred
+        ) / 1000000;
+
+
+    if (
+        area < 0.01
+    ) {
+
+        setStatus(
+            "Выделенная территория слишком маленькая."
+        );
+
+        return;
+
+    }
+
+
+    let remaining;
+
+
+    try {
+
+        remaining =
+            turf.difference(
+                turf.featureCollection([
+                    sourceFeature,
+                    transferred
+                ])
+            );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        setStatus(
+            "Не удалось удалить территорию у исходной страны."
+        );
+
+        return;
+
+    }
+
+
+    if (!remaining) {
+
+        setStatus(
+            "Нельзя удалить всю территорию страны."
+        );
+
+        return;
+
+    }
+
+
+    let newTarget;
+
+
+    try {
+
+        newTarget =
+            turf.union(
+                turf.featureCollection([
+                    targetFeature,
+                    transferred
+                ])
+            );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        setStatus(
+            "Не удалось добавить территорию стране-получателю."
+        );
+
+        return;
+
+    }
+
+
+    // Сохраняем состояние в историю перед изменением и очищаем redo стек
+    historyStack.push({
+        sourceName: sourceName,
+        targetName: targetName,
+        sourceGeo: JSON.parse(JSON.stringify(sourceFeature)),
+        targetGeo: JSON.parse(JSON.stringify(targetFeature)),
+        area: area
+    });
+    redoStack = [];
+    updateHistoryButtons();
+
+
+    animateMultiBorderExpansion(
+        transferred,
+        remaining,
+        sourceFeature,
+        newTarget,
+        sourceName,
+        targetName,
+        area
+    );
+
+}
+
+
+/* =====================================================
+   GET LINE COORDINATES
+===================================================== */
+
+function getLineCoordinates(line) {
+    const result = [];
+    function collect(geometry) {
+        if (!geometry) return;
+        if (geometry.type === "LineString") {
+            geometry.coordinates.forEach(c => result.push(c));
+        } else if (geometry.type === "MultiLineString") {
+            geometry.coordinates.forEach(lc => lc.forEach(c => result.push(c)));
+        }
+    }
+    if (line.type === "Feature") collect(line.geometry);
+    else if (line.type === "FeatureCollection") line.features.forEach(f => collect(f.geometry));
+    else collect(line);
+    return result;
+}
+
+
+/* =====================================================
+   FIND BORDER START POINTS
+===================================================== */
+
+function findBorderStartPoints(sourceFeature, transferred) {
+    const sourceLine = turf.polygonToLine(sourceFeature);
+    const transferredLine = turf.polygonToLine(transferred);
+    const sourceCoordinates = getLineCoordinates(sourceLine);
+    const startPoints = [];
+
+    const step = Math.max(1, Math.ceil(sourceCoordinates.length / 80));
+
+    for (let i = 0; i < sourceCoordinates.length; i += step) {
+        const point = turf.point(sourceCoordinates[i]);
+        let nearest;
+        try {
+            nearest = turf.nearestPointOnLine(transferredLine, point, { units: "kilometers" });
+        } catch (error) {
+            continue;
+        }
+        if (nearest.properties.dist < 80) {
+            startPoints.push(nearest);
+        }
+    }
+
+    const MAX_START_POINTS = 10;
+    if (startPoints.length > MAX_START_POINTS) {
+        const result = [];
+        const step2 = startPoints.length / MAX_START_POINTS;
+        for (let i = 0; i < MAX_START_POINTS; i++) {
+            result.push(startPoints[Math.floor(i * step2)]);
+        }
+        return result;
+    }
+
+    if (startPoints.length === 0) {
+        const coords = getLineCoordinates(transferredLine);
+        const fallbackStep = Math.max(1, Math.floor(coords.length / 6));
+        for (let i = 0; i < coords.length; i += fallbackStep) {
+            startPoints.push(turf.point(coords[i]));
+        }
+    }
+
+    return startPoints;
+}
+
+
+/* =====================================================
+   REALISTIC MULTI-FRONT BORDER ADVANCEMENT (1 SEC)
+===================================================== */
+
+function animateMultiBorderExpansion(
+    transferred,
+    remaining,
+    sourceFeature,
+    newTarget,
+    sourceName,
+    targetName,
+    area
+) {
+
+    setStatus(
+        sourceName + " → " + targetName + ": многостороннее продвижение фронта..."
+    );
+
+    const startPoints = findBorderStartPoints(sourceFeature, transferred);
+    const bbox = turf.bbox(transferred);
+    const corners = [
+        turf.point([bbox[0], bbox[1]]),
+        turf.point([bbox[0], bbox[3]]),
+        turf.point([bbox[2], bbox[1]]),
+        turf.point([bbox[2], bbox[3]])
+    ];
+
+    let maxDistance = 0;
+    startPoints.forEach(start => {
+        corners.forEach(corner => {
+            const distance = turf.distance(start, corner, { units: "kilometers" });
+            if (distance > maxDistance) maxDistance = distance;
+        });
+    });
+    maxDistance *= 1.1;
+
+    const captureLayer = L.geoJSON(null, {
+        style: {
+            color: COLOR_B,
+            weight: 1,
+            fillColor: COLOR_B,
+            fillOpacity: 0.48
+        },
+        interactive: false
+    }).addTo(map);
+
+    const startTime = performance.now();
+    const duration = 1000; // Ровно 1 секунда быстрой анимации
+
+    function animationFrame(currentTime) {
+        const elapsed = currentTime - startTime;
+        let progress = elapsed / duration;
+
+        if (progress > 1) progress = 1;
+
+        // Плавное ускорение
+        const smooth = progress * progress * (3 - 2 * progress);
+        const radius = Math.max(0.01, maxDistance * smooth);
+
+        let combined = null;
+
+        for (let i = 0; i < startPoints.length; i++) {
+            const start = startPoints[i];
+            let circle;
+            try {
+                circle = turf.buffer(start, radius, { units: "kilometers", steps: 8 });
+            } catch (error) {
+                continue;
+            }
+
+            if (!combined) {
+                combined = circle;
+            } else {
+                try {
+                    combined = turf.union(turf.featureCollection([combined, circle]));
+                } catch (error) {}
+            }
+        }
+
+        if (combined) {
+            try {
+                const captured = turf.intersect(turf.featureCollection([transferred, combined]));
+                if (captured) {
+                    captureLayer.clearLayers();
+                    captureLayer.addData(captured);
+                }
+            } catch (error) {}
+        }
+
+        if (progress < 1) {
+            requestAnimationFrame(animationFrame);
+        } else {
+            finishCapture();
+        }
+    }
+
+    function finishCapture() {
+        map.removeLayer(captureLayer);
+
+        countryGeometries[sourceName] = remaining;
+        countryGeometries[targetName] = newTarget;
+
+        const sourceLayer = countryLayers[sourceName];
+        const targetLayer = countryLayers[targetName];
+
+        if (sourceLayer) {
+            sourceLayer.clearLayers();
+            sourceLayer.addData(remaining);
+            sourceLayer.setStyle({
+                color: COLOR_A,
+                weight: 2,
+                fillColor: COLOR_A,
+                fillOpacity: 0.48
+            });
+        }
+
+        if (targetLayer) {
+            targetLayer.clearLayers();
+            targetLayer.addData(newTarget);
+            targetLayer.setStyle({
+                color: COLOR_B,
+                weight: 2,
+                fillColor: COLOR_B,
+                fillOpacity: 0.48
+            });
+        }
+
+        const formatted = area.toLocaleString("ru-RU", {
+            maximumFractionDigits: 2
+        });
+
+        document.getElementById("areaA").textContent =
+            "Передано: " + formatted + " км²";
+
+        document.getElementById("areaB").textContent =
+            "Получено: " + formatted + " км²";
+
+        setStatus(
+            sourceName + " → " + targetName + ": граница успешно изменена."
+        );
+
+        updateCountries();
+    }
+
+    requestAnimationFrame(animationFrame);
+}
+
+
+/* =====================================================
+   UNDO / REDO / RESET
+===================================================== */
+
+function updateHistoryButtons() {
+    const undoBtn = document.getElementById("undoButton");
+    const redoBtn = document.getElementById("redoButton");
+    undoBtn.disabled = historyStack.length === 0;
+    redoBtn.disabled = redoStack.length === 0;
+}
+
+document.getElementById(
+    "undoButton"
+).addEventListener(
+    "click",
+    function() {
+        if (historyStack.length === 0) return;
+
+        const currentState = {
+            sourceName: countryA.value,
+            targetName: countryB.value,
+            sourceGeo: JSON.parse(JSON.stringify(countryGeometries[countryA.value])),
+            targetGeo: JSON.parse(JSON.stringify(countryGeometries[countryB.value]))
+        };
+
+        const lastState = historyStack.pop();
+        redoStack.push(currentState);
+        updateHistoryButtons();
+
+        countryGeometries[lastState.sourceName] = lastState.sourceGeo;
+        countryGeometries[lastState.targetName] = lastState.targetGeo;
+
+        // Синхронизируем селекты стран со стадией, если нужно
+        countryA.value = lastState.sourceName;
+        countryB.value = lastState.targetName;
+
+        redrawAllCountries();
+        updateCountries();
+
+        document.getElementById("areaA").textContent = "Ход отменен";
+        document.getElementById("areaB").textContent = "Ход отменен";
+        setStatus("Отменено последнее изменение границ.");
+    }
+);
+
+document.getElementById(
+    "redoButton"
+).addEventListener(
+    "click",
+    function() {
+        if (redoStack.length === 0) return;
+
+        const currentState = {
+            sourceName: countryA.value,
+            targetName: countryB.value,
+            sourceGeo: JSON.parse(JSON.stringify(countryGeometries[countryA.value])),
+            targetGeo: JSON.parse(JSON.stringify(countryGeometries[countryB.value]))
+        };
+
+        const nextState = redoStack.pop();
+        historyStack.push(currentState);
+        updateHistoryButtons();
+
+        countryGeometries[nextState.sourceName] = nextState.sourceGeo;
+        countryGeometries[nextState.targetName] = nextState.targetGeo;
+
+        countryA.value = nextState.sourceName;
+        countryB.value = nextState.targetName;
+
+        redrawAllCountries();
+        updateCountries();
+
+        document.getElementById("areaA").textContent = "Ход возвращен";
+        document.getElementById("areaB").textContent = "Ход возвращен";
+        setStatus("Повторено изменение границ.");
+    }
+);
+
+document.getElementById(
+    "resetButton"
+).addEventListener(
+    "click",
+    function() {
+
+        location.reload();
+
+    }
+);
+
+</script>
+
+</body>
+</html>
